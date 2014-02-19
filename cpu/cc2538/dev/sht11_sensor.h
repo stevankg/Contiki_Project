@@ -78,7 +78,7 @@ typedef union
 #define MEASURE_HUMI 0x05   //000   0010    1
 #define RESET        0x1e   //000   1111    0
 
-//Function prototypes
+// Function prototypes
 
 char s_write_byte(unsigned char value);
 
