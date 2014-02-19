@@ -71,7 +71,7 @@ typedef union
 
 #define noACK 0
 #define ACK   1
-                            //adr  command  r/w
+                             //adr  command  r/w
 #define STATUS_REG_W 0x06   //000   0011    0
 #define STATUS_REG_R 0x07   //000   0011    1
 #define MEASURE_TEMP 0x03   //000   0001    1
