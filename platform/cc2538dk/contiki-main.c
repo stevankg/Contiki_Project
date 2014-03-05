@@ -68,10 +68,12 @@
 #include "reg.h"
 #include "ieee-addr.h"
 #include "lpm.h"
+#include <float.h>
 
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 /*---------------------------------------------------------------------------*/
 #if STARTUP_CONF_VERBOSE
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -123,13 +125,13 @@ static void set_rime_addr() {
  */
 int main(void) {
 	// Just for test purposes
-	uint16_t* temperature = 0;
-	uint16_t* humidity = 0;
-	float* temperature_f = 0;
-	float* humidity_f = 0;
+	uint16_t temperature = 0;
+	uint16_t humidity = 0;
+	float* temperature_f;
+	float* humidity_f;
 	unsigned char* checksum;
-	unsigned char* status;
-	unsigned char temp_data = 0xaa;
+	unsigned char status;
+	unsigned char temp_data = 0xff;
 	unsigned char err = 0;
 
 	nvic_init();
@@ -214,45 +216,42 @@ int main(void) {
 
 			r = process_run();
 
-			/*err = s_measure(temperature, checksum, TEMP);
+			err = s_measure(&temperature, checksum, TEMP);
 
 			if (err == 0)
 			{
-				PRINTF("Temperature (ADC valueeeeeeeeee) = 0x%x\n", *temperature);
+				PRINTF("Temperature (ADC value) = 0x%4x\n", temperature);
 
-				err = s_measure(humidity, checksum, HUMI);
+				err = s_measure(&humidity, checksum, HUMI);
 
 				if (err == 0)
 				{
-					PRINTF("Humidity (ADC value) = 0x%x\n", *humidity);
+					PRINTF("Humidity (ADC value) = 0x%4x\n", humidity);
 
-					temperature_f = (float*)temperature;
-					humidity_f = (float*)humidity;
+					temperature_f = (float*)&temperature;
+					humidity_f = (float*)&humidity;
 
 					calc_sth11(temperature_f, humidity_f);
 
-					PRINTF("Temperature = %f\n", *temperature_f);
-					PRINTF("Humidity = %f\n", *humidity_f);
+					PRINTF("  Temperature=%d.%02u C\n", (int)(*temperature_f), ((unsigned int)(*temperature_f*10))%10);
+					PRINTF("  Humidity=%d.%02u %\n", (int)(*humidity_f), ((unsigned int)(*humidity_f*10))%10);
 				}
 				else
 					PRINTF("SHT11 error - could not read humidity!\n");
 			}
 			else
-				PRINTF("SHT11 error - could not read temperature!\n");*/
+				PRINTF("SHT11 error - could not read temperature!\n");
 
-			err = s_read_statusreg(status, checksum);
-
+			/*err = s_write_statusreg(&temp_data);
 			if (err == 0)
-				PRINTF("STATUS REGISTER = 0x%x", *status);
-			else
-				PRINTF("SHT11 error - could not read status register!\n");
+			{
+				err = s_read_statusreg(&status, checksum);
+				if (err == 0)
+					PRINTF("STATUS REGISTER = 0x%2x", status);
+				else
+					PRINTF("SHT11 error - could not read status register!\n");
+			}*/
 
-			/*PRINTF("777777777777\n");
-			gpio_test();
-			PRINTF("PC0 = 0x%x\n", GPIO_READ_PIN(GPIO_C_BASE, 0x01));
-			PRINTF("PC1 = 0x%x\n", GPIO_READ_PIN(GPIO_C_BASE, 0x02));
-			PRINTF("PC2 = 0x%x\n", GPIO_READ_PIN(GPIO_C_BASE, 0x04));
-			PRINTF("PC3 = 0x%x\n", GPIO_READ_PIN(GPIO_C_BASE, 0x08));*/
 		} while (r > 0);
 
 		/* We have serviced all pending events. Enter a Low-Power mode. */

@@ -55,26 +55,28 @@ char s_write_byte(unsigned char value)
 
   val = value;
 
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, SCK);
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, DATA);
   // Set CLK pin as output
-  GPIO_SET_OUTPUT(SCK_BASE, SCK);
+  GPIO_SET_OUTPUT(GPIO_B_BASE, SCK);
   // Set data pin as output
-  GPIO_SET_OUTPUT(DATA_BASE, DATA);
+  GPIO_SET_OUTPUT(GPIO_B_BASE, DATA);
     
-  //for (i=0x80; i>0; i/=2)                       //shift bit for masking
-  for (i=0; i<8; i++, val <<= 1)
+  for (i=0x80; i>0; i/=2)                       //shift bit for masking
+  //for (i=0; i<8; i++, val <<= 1)
   { 
-	  if ((val & 0x80) == 0x80)
-		  GPIO_SET_PIN(GPIO_B_BASE, DATA);
-	  else
-		  GPIO_CLR_PIN(GPIO_B_BASE, DATA);
-    //if (i & value)                            //masking value with i , write to SENSI-BUS
-    //	GPIO_SET_PIN(GPIO_B_BASE, DATA);
-    //else
-    //	GPIO_CLR_PIN(GPIO_B_BASE, DATA);
+	//  if ((val & 0x80) == 0x80)
+	//	  GPIO_SET_PIN(GPIO_B_BASE, DATA);
+	//  else
+	//	  GPIO_CLR_PIN(GPIO_B_BASE, DATA);
+    if (i & value)                            //masking value with i , write to SENSI-BUS
+    	GPIO_SET_PIN(GPIO_B_BASE, DATA);
+    else
+    	GPIO_CLR_PIN(GPIO_B_BASE, DATA);
                              
     clock_delay_usec(2);                      //observe setup time
     GPIO_SET_PIN(GPIO_B_BASE, SCK);         //clk for SENSI-BUS
-    clock_delay_usec(5);                      //pulswith approx. 5 us  	
+    clock_delay_usec(2);                      //pulswith approx. 5 us
     GPIO_CLR_PIN(GPIO_B_BASE, SCK);
     clock_delay_usec(2);                      //observe hold time
   }
@@ -82,16 +84,16 @@ char s_write_byte(unsigned char value)
   GPIO_SET_PIN(GPIO_B_BASE, DATA);          //release DATA-line
   clock_delay_usec(2);                        //observe setup time
   GPIO_SET_PIN(GPIO_B_BASE, SCK);          //clk #9 for ack
+  clock_delay_usec(2);
   
+  GPIO_PERIPHERAL_CONTROL(DATA_BASE, DATA);
   // Set data pin as input
   GPIO_SET_INPUT(DATA_BASE, DATA);
 
   error = GPIO_READ_PIN(GPIO_B_BASE, DATA) >> DATA_PIN;    //check ack (DATA will be pulled down by SHT11)
 
-  PRINTF("Dataaaaaaaaaaaaa pin = 0x%x\n", GPIO_READ_PIN(GPIO_B_BASE, DATA));
-  PRINTF("error = 0x%x\n", error);
-
   GPIO_CLR_PIN(GPIO_B_BASE, SCK);
+  clock_delay_usec(2);
 
   return error;                                               //error=1 in case of no acknowledge
 }
@@ -101,6 +103,8 @@ char s_read_byte(unsigned char ack)
 { 
   unsigned char i,val=0;
 
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, SCK);
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, DATA);
   // Set CLK pin as output
   GPIO_SET_OUTPUT(SCK_BASE, SCK);
   // Set data pin as output
@@ -108,6 +112,7 @@ char s_read_byte(unsigned char ack)
 
   GPIO_SET_PIN(GPIO_B_BASE, DATA);                          //release DATA-line
   
+  GPIO_PERIPHERAL_CONTROL(DATA_BASE, DATA);
   // Set data pin as input
   GPIO_SET_INPUT(DATA_BASE, DATA);
   
@@ -117,14 +122,17 @@ char s_read_byte(unsigned char ack)
   for (i=0x80; i>0; i/=2)                                       //shift bit for masking
   { 
 	  	GPIO_SET_PIN(GPIO_B_BASE, SCK);                           //clk for SENSI-BUS
+	  	clock_delay_usec(2);
     
 		if (GPIO_READ_PIN(GPIO_B_BASE, DATA) == DATA)            //read bit
-		  val=(val | i);
+		    val=(val | i);
 
 		GPIO_CLR_PIN(GPIO_B_BASE, SCK);
 		clock_delay_usec(2);
   }
 
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, SCK);
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, DATA);
   // Set data pin as output
   GPIO_SET_OUTPUT(DATA_BASE, DATA);
 
@@ -140,6 +148,7 @@ char s_read_byte(unsigned char ack)
   GPIO_CLR_PIN(GPIO_B_BASE, SCK);
   clock_delay_usec(2);                                          //observe hold time						    
   GPIO_SET_PIN(GPIO_B_BASE, DATA);                          //release DATA-line
+  clock_delay_usec(2);
   
   return val;
 }
@@ -151,6 +160,8 @@ char s_read_byte(unsigned char ack)
 // SCK : ___|   |___|   |______
 void s_transstart(void)
 {
+   GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, SCK);
+   GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, DATA);
    // Set CLK pin as output
    GPIO_SET_OUTPUT(SCK_BASE, SCK);
    // Set data pin as output
@@ -165,12 +176,13 @@ void s_transstart(void)
    GPIO_CLR_PIN(GPIO_B_BASE, DATA);
    clock_delay_usec(2);
    GPIO_CLR_PIN(GPIO_B_BASE, SCK);
-   clock_delay_usec(5);
+   clock_delay_usec(2);
    GPIO_SET_PIN(GPIO_B_BASE, SCK);
    clock_delay_usec(2);
    GPIO_SET_PIN(GPIO_B_BASE, DATA);
    clock_delay_usec(2);
    GPIO_CLR_PIN(GPIO_B_BASE, SCK);
+   clock_delay_usec(2);
 }
 
 // communication reset: DATA-line=1 and at least 9 SCK cycles followed by transstart
@@ -182,6 +194,8 @@ void s_connectionreset(void)
 {  
   unsigned char i; 
 
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, SCK);
+  GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, DATA);
   // Set CLK pin as output
   GPIO_SET_OUTPUT(SCK_BASE, SCK);
   // Set data pin as output
@@ -189,11 +203,14 @@ void s_connectionreset(void)
   
   GPIO_SET_PIN(GPIO_B_BASE, DATA);        //Initial state
   GPIO_CLR_PIN(GPIO_B_BASE, SCK);         //Initial state
+  clock_delay_usec(2);
    
   for(i=0; i<9; i++)                         //9 SCK cycles
   { 
 	  GPIO_SET_PIN(GPIO_B_BASE, SCK);
+	  clock_delay_usec(2);
 	  GPIO_CLR_PIN(GPIO_B_BASE, SCK);
+	  clock_delay_usec(2);
   }
   
   s_transstart();                            //transmission start
@@ -257,10 +274,11 @@ char s_measure(uint16_t *p_value, unsigned char *p_checksum, unsigned char mode)
     break;	 
   }
   
-  for (i=0; i<65535; i++)     //wait until sensor has finished the measurement
+  for (i=0; i<30000; i++)     //wait until sensor has finished the measurement
   {
-    if (GPIO_READ_PIN(GPIO_B_BASE, DATA) == 0)
-      break; 
+	  clock_delay_usec(100);
+      if (GPIO_READ_PIN(GPIO_B_BASE, DATA) == 0)
+    	  break;
   }
   
   if (GPIO_READ_PIN(GPIO_B_BASE, DATA) == DATA)         // or timeout (~2 sec.) is reached
@@ -272,16 +290,16 @@ char s_measure(uint16_t *p_value, unsigned char *p_checksum, unsigned char mode)
   
   if (mode == TEMP)
   {
-	  *p_value = data_high;
-	  *p_value <<= 6;
-	  *p_value |= (data_low & 0x3F);
+	  *p_value = (uint16_t)data_high;
+	  *p_value <<= 8;
+	  *p_value |= (uint16_t)data_low;
   }
 
   if (mode == HUMI)
   {
-	  *p_value = data_high;
-	  *p_value <<= 4;
-	  *p_value |= (data_low & 0x0F);
+	  *p_value = (uint16_t)data_high;
+	  *p_value <<= 8;
+	  *p_value |= (uint16_t)data_low;
   }
 
   return error;
@@ -307,6 +325,7 @@ void calc_sth11(float *p_humidity ,float *p_temperature)
   float t_C;                        // t_C   :  Temperature [\B0C]
 
   t_C = t*0.01 - 40.1;                    //calc. temperature [\B0C] from 14 bit temp. ticks @ 5V
+
   rh_lin = C3*rh*rh + C2*rh + C1;         //calc. humidity from ticks to [%RH]
   rh_true = (t_C-25)*(T1+T2*rh)+rh_lin;   //calc. temperature compensated humidity [%RH]
   

@@ -59,8 +59,8 @@ typedef union
 #define TEMP	0
 #define HUMI	1
 
-#define	DATA_BASE     GPIO_B_BASE
-#define	SCK_BASE      GPIO_B_BASE
+#define	 DATA_BASE     GPIO_B_BASE
+#define	 SCK_BASE      GPIO_B_BASE
 #define DATA_PIN     3
 #define SCK_PIN      5
 #define	 DATA   	  0x08
